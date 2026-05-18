@@ -1,0 +1,80 @@
+services:
+  # 1. Eureka Server
+  - type: web
+    name: qma-eureka-server
+    env: docker
+    dockerContext: .
+    dockerfilePath: eureka-server/dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8761
+
+  # 2. Auth Service
+  - type: web
+    name: qma-auth-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: auth-service/dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard
+      - key: DB_USERNAME
+        sync: false # Set in Render Dashboard
+      - key: DB_PASSWORD
+        sync: false # Set in Render Dashboard
+      - key: EUREKA_URL
+        fromService:
+          name: qma-eureka-server
+          type: web
+          property: host
+        value: http://qma-eureka-server:8761/eureka/
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+  # 3. QMA Service
+  - type: web
+    name: qma-qma-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: qma-service/dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8082
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: EUREKA_URL
+        fromService:
+          name: qma-eureka-server
+          type: web
+          property: host
+        value: http://qma-eureka-server:8761/eureka/
+
+  # 4. API Gateway
+  - type: web
+    name: qma-api-gateway
+    env: docker
+    dockerContext: .
+    dockerfilePath: api-gateway/dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: EUREKA_URL
+        fromService:
+          name: qma-eureka-server
+          type: web
+          property: host
+        value: http://qma-eureka-server:8761/eureka/
+      - key: ALLOWED_ORIGINS
+        value: "*" # Update this to your frontend URL later
